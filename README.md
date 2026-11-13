@@ -1,16 +1,11 @@
 # imfram
 
-The egui UI layer that wobble and graav share, so a widget built for one
-is the other's too. Blender muscle memory on every canvas; one set of
-controls; one window shell. The name is manifesto rule 8: *hands carry
-over from wobble*.
+Egui UI layer.
 
-In other frameworks' terms: an immediate-mode toolkit on egui, the way
-Dear ImGui's docking branch plus a node-editor add-on serve C++ tool
-authors. Not an app framework (no eframe, no widget tree, no web stack):
-the app owns its winit loop and wgpu device and hands state in through
-closures and traits. Docked panels are real OS windows, like Blender's
-and Nuke's, not viewports inside one.
+An immediate-mode toolkit on egui. Not an app framework (no eframe, no 
+widget tree, no web stack): the app owns its winit loop and wgpu device 
+and hands state in through closures and traits. Docked panels are real 
+OS windows, like Blender's.
 
 ```
 cargo test                 # the crate alone
