@@ -1,0 +1,40 @@
+[workspace]
+members = ["playground"]
+
+[package]
+name = "imfram"
+version = "0.1.0"
+edition = "2021"
+description = "The egui UI layer shared by wobble and graav: window shell, docking, tilt menus, widgets."
+license = "MIT"
+publish = false
+
+[features]
+default = []
+
+[dependencies]
+egui = { version = "0.36", features = ["serde"] }
+egui-wgpu = "0.36"
+wgpu = "30"
+log = "0.4"
+serde = { version = "1", features = ["derive"] }
+web-time = "1"
+png = "0.18"
+half = { version = "2.7", features = ["bytemuck"] }
+bytemuck = "1"
+
+
+# (egui-winit 0.36 does not build for wasm32 as of 0.36.2: the shell, the
+# dock and the file browser are native.)
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+egui-winit = "0.36"
+winit = "0.30"
+pollster = "1"
+rfd = "0.17"
+
+# In a page `bg::spawn` runs on rayon's one-thread pool (no threads there).
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+rayon = "1"
+
+[dev-dependencies]
+serde_json = "1"
