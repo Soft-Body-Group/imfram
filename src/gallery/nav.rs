@@ -263,12 +263,29 @@ fn list_dirs_hidden(dir: &Path, hidden: bool) -> Vec<(String, PathBuf)> {
     out
 }
 
+/// The user's home folder: `HOME`, else `USERPROFILE` (Windows).
+pub fn home() -> Option<PathBuf> {
+    std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")).map(PathBuf::from).filter(|p| !p.as_os_str().is_empty())
+}
+
+/// A one-entry "Home" list for a sidebar: lit when `current` is home, a
+/// click answers it. Nothing is drawn when there is no home to go to.
+pub fn home_place(ui: &mut Ui, current: &Path) -> Option<PathBuf> {
+    let h = home()?;
+    let mut go = None;
+    if ui.selectable_label(h == current, "Home").on_hover_text(h.display().to_string()).clicked() {
+        go = Some(h);
+    }
+    ui.add_space(6.0);
+    go
+}
+
 /// Where a folder tree starts: home, the filesystem's root(s), and mounted
 /// volumes (`/Volumes` on macOS; `/media/<user>` and `/mnt` elsewhere on
 /// unix; drive letters on Windows).
 pub fn roots() -> Vec<(String, PathBuf)> {
     let mut out = vec![];
-    if let Some(h) = std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")).map(PathBuf::from) {
+    if let Some(h) = home() {
         out.push(("~".to_string(), h));
     }
     #[cfg(windows)]
@@ -300,6 +317,11 @@ pub struct FolderTree {
     kids: HashMap<PathBuf, Vec<(String, PathBuf)>>,
     roots: Option<Vec<(String, PathBuf)>>,
     revealed: Option<PathBuf>,
+    /// A reveal scrolls the lit row into view ONCE. Asked every frame, it
+    /// pinned the tree to that row; and a folder listed twice (home is
+    /// both `~` and under its drive / `/`) had the two copies fighting,
+    /// the tree jumping between them every frame.
+    scroll: bool,
 }
 
 impl FolderTree {
@@ -320,6 +342,7 @@ impl FolderTree {
         }
         self.kids.remove(dir);
         self.revealed = Some(dir.to_path_buf());
+        self.scroll = true;
     }
 
     fn kids(&mut self, p: &Path) -> &Vec<(String, PathBuf)> {
@@ -356,8 +379,13 @@ impl FolderTree {
             }
             l
         });
-        if path == current && self.revealed.as_deref() == Some(current) && !ui.is_rect_visible(r.inner.rect) {
-            r.inner.scroll_to_me(Some(egui::Align::Center));
+        if path == current && self.scroll {
+            // The first copy drawn answers (`~` comes first): it is in view
+            // already, or it is scrolled to, and either way that is done.
+            self.scroll = false;
+            if !ui.is_rect_visible(r.inner.rect) {
+                r.inner.scroll_to_me(Some(egui::Align::Center));
+            }
         }
         if toggle {
             if open {
